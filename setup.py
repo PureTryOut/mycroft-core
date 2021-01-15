@@ -80,5 +80,9 @@ setup(
             'mycroft-enclosure-client=mycroft.client.enclosure.__main__:main',
             'mycroft-cli-client=mycroft.client.text.__main__:main'
         ]
-    }
+    },
+    scripts=[
+        'bin/mycroft-start',
+        'bin/mycroft-stop'
+    ]
 )
