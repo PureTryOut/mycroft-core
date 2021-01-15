@@ -13,6 +13,8 @@
 # limitations under the License.
 #
 from os import path
+from pathlib import Path
+from xdg import BaseDirectory
 from unittest import TestCase
 from unittest.mock import Mock, patch
 
@@ -90,7 +92,8 @@ class TestSkillManager(MycroftUnitTestBase):
         self.skill_updater_mock = skill_updater_patch.start()
 
     def _mock_skill_loader_instance(self):
-        self.skill_dir = self.temp_dir.joinpath('test_skill')
+        self.skill_dir = (Path(BaseDirectory.save_data_path('mycroft/skills'))
+                          .joinpath('test_skill'))
         self.skill_loader_mock = Mock(spec=SkillLoader)
         self.skill_loader_mock.instance = Mock()
         self.skill_loader_mock.instance.default_shutdown = Mock()
@@ -123,8 +126,7 @@ class TestSkillManager(MycroftUnitTestBase):
         )
 
     def test_remove_git_locks(self):
-        git_dir = self.temp_dir.joinpath('foo/.git')
-        git_dir.mkdir(parents=True)
+        git_dir = Path(BaseDirectory.save_data_path('mycroft/skills/foo/.git'))
         git_lock_file_path = str(git_dir.joinpath('index.lock'))
         with open(git_lock_file_path, 'w') as git_lock_file:
             git_lock_file.write('foo')
