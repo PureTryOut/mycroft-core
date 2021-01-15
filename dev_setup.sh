@@ -24,6 +24,12 @@ set -Ee
 cd $(dirname $0)
 TOP=$(pwd -L)
 
+if [ -n "${XDG_CACHE_HOME+x}" ]; then
+	logdir="$XDG_CACHE_HOME/mycroft"
+else
+	logdir="$HOME/.cache/mycroft"
+fi
+
 function clean_mycroft_files() {
     echo '
 This will completely remove any files installed by mycroft (including pairing
@@ -33,11 +39,12 @@ Do you wish to continue? (y/n)'
         read -N1 -s key
         case $key in
         [Yy])
-            sudo rm -rf /var/log/mycroft
+            rm -rf $logdir
             rm -f /var/tmp/mycroft_web_cache.json
             rm -rf "${TMPDIR:-/tmp}/mycroft"
             rm -rf "$HOME/.mycroft"
             sudo rm -rf "/opt/mycroft"
+            ${VIRTUALENV}/bin/pip uninstall .
             exit 0
             ;;
         [Nn])
@@ -226,33 +233,6 @@ locally?'
     fi
 
     echo
-    # Add mycroft-core/bin to the .bashrc PATH?
-    sleep 0.5
-    echo '
-There are several Mycroft helper commands in the bin folder.  These
-can be added to your system PATH, making it simpler to use Mycroft.
-Would you like this to be added to your PATH in the .profile?'
-    if get_YN ; then
-        echo -e "$HIGHLIGHT Y - Adding Mycroft commands to your PATH $RESET"
-
-        if [[ ! -f ~/.profile_mycroft ]] ; then
-            # Only add the following to the .profile if .profile_mycroft
-            # doesn't exist, indicating this script has not been run before
-            echo '' >> ~/.profile
-            echo '# include Mycroft commands' >> ~/.profile
-            echo 'source ~/.profile_mycroft' >> ~/.profile
-        fi
-
-        echo "
-# WARNING: This file may be replaced in future, do not customize.
-# set path so it includes Mycroft utilities
-if [ -d \"${TOP}/bin\" ] ; then
-    PATH=\"\$PATH:${TOP}/bin\"
-fi" > ~/.profile_mycroft
-        echo -e "Type ${CYAN}mycroft-help$RESET to see available commands."
-    else
-        echo -e "$HIGHLIGHT N - PATH left unchanged $RESET"
-    fi
 
     # Create a link to the 'skills' folder.
     sleep 0.5
@@ -331,17 +311,14 @@ Please review the following package changes carefully."
     fi
 }
 
-
 function open_suse_install() {
     $SUDO zypper install -y git python3 python3-devel libtool libffi-devel libopenssl-devel autoconf automake bison swig portaudio-devel mpg123 flac curl libicu-devel pkg-config libjpeg-devel libfann-devel python3-curses pulseaudio
     $SUDO zypper install -y -t pattern devel_C_C++
 }
 
-
 function fedora_install() {
     $SUDO dnf install -y git python3 python3-devel python3-pip python3-setuptools python3-virtualenv pygobject3-devel libtool libffi-devel openssl-devel autoconf bison swig glib2-devel portaudio-devel mpg123 mpg123-plugins-pulseaudio screen curl pkgconfig libicu-devel automake libjpeg-turbo-devel fann-devel gcc-c++ redhat-rpm-config jq make
 }
-
 
 function arch_install() {
     $SUDO pacman -S --needed --noconfirm git python python-pip python-setuptools python-virtualenv python-gobject libffi swig portaudio mpg123 screen flac curl icu libjpeg-turbo base-devel jq pulseaudio pulseaudio-alsa
@@ -354,7 +331,6 @@ function arch_install() {
         rm -rf fann
     )
 }
-
 
 function centos_install() {
     $SUDO yum install epel-release
@@ -512,7 +488,7 @@ if ! grep -q "$TOP" $VENV_PATH_FILE ; then
 ' "$VENV_PATH_FILE"
 fi
 
-# install required python modules
+# Install required python modules
 if ! pip install -r requirements/requirements.txt ; then
     echo 'Warning: Failed to install required dependencies. Continue? y/N'
     read -n1 continue
@@ -536,6 +512,8 @@ fi
 if ! pip install -r requirements/tests.txt ; then
     echo "Warning: Test requirements failed to install. Note: normal operation should still work fine..."
 fi
+# Actually installing Mycroft and it's deps
+pip install .
 
 SYSMEM=$(free | awk '/^Mem:/ { print $2 }')
 MAXCORES=$(($SYSMEM / 2202010))
@@ -580,16 +558,6 @@ chmod +x bin/mycroft-pip
 chmod +x bin/mycroft-say-to
 chmod +x bin/mycroft-skill-testrunner
 chmod +x bin/mycroft-speak
-
-# create and set permissions for logging
-if [[ ! -w /var/log/mycroft/ ]] ; then
-    # Creating and setting permissions
-    echo 'Creating /var/log/mycroft/ directory'
-    if [[ ! -d /var/log/mycroft/ ]] ; then
-        $SUDO mkdir /var/log/mycroft/
-    fi
-    $SUDO chmod 777 /var/log/mycroft/
-fi
 
 #Store a fingerprint of setup
 md5sum requirements/requirements.txt requirements/extra-audiobackend.txt requirements/extra-stt.txt requirements/extra-mark1.txt requirements/tests.txt dev_setup.sh > .installed

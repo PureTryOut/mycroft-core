@@ -66,6 +66,7 @@ setup(
         'mark1': required('requirements/extra-mark1.txt'),
         'stt': required('requirements/extra-stt.txt')
     },
+    tests_require=required('requirements/tests.txt'),
     packages=find_packages(include=['mycroft*']),
     include_package_data=True,
 
@@ -80,5 +81,9 @@ setup(
             'mycroft-enclosure-client=mycroft.client.enclosure.__main__:main',
             'mycroft-cli-client=mycroft.client.text.__main__:main'
         ]
-    }
+    },
+    scripts=[
+        'bin/mycroft-start',
+        'bin/mycroft-stop'
+    ]
 )
