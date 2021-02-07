@@ -185,7 +185,8 @@ def load_settings():
         LOG.warning(" Note that this location is deprecated and will" +
                     " not be used in the future")
         LOG.warning(" Please move it to " +
-                    BaseDirectory.save_config_path('mycroft'))
+                    os.path.join(BaseDirectory.save_config_path('mycroft'),
+                                 filename))
         config_file = path
 
     # Check XDG_CONFIG_DIR
